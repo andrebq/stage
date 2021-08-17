@@ -1,0 +1,42 @@
+syntax = "proto3";
+package protocol;
+
+option go_package = "github.com/andrebq/stage/internal/protocol";
+
+message Message {
+	string actor = 1;
+	string sender = 2;
+	bytes payload = 3;
+	repeated Label labels = 4;
+}
+
+message Label {
+	string header = 1;
+	string value = 2;
+}
+
+message DeliverRequest {
+	Message message = 1;
+}
+
+message DeliverResponse {
+	bool delivered = 1;
+}
+
+message Agent {
+	string actor = 1;
+	string agentBindAddr = 2;
+}
+
+message RegisterRequest {
+	Agent agent = 1;
+}
+
+message RegisterResponse {
+	bool active = 1;
+}
+
+service Exchange {
+	rpc Deliver(DeliverRequest) returns (DeliverResponse) {}
+	rpc Register(RegisterRequest) returns (RegisterResponse) {}
+}
