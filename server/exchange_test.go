@@ -5,6 +5,7 @@ import (
 	"net"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/andrebq/stage/client"
 	"github.com/andrebq/stage/internal/protocol"
@@ -24,7 +25,7 @@ func TestStartExchange(t *testing.T) {
 	ctx := context.Background()
 	lst, done := acquireListener(t)
 	defer done()
-	e := NewExchange()
+	e := NewExchange("")
 	go e.Serve(lst)
 	runtime.Gosched()
 
@@ -32,14 +33,12 @@ func TestStartExchange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to open a client connection to %v, cause %v", lst.Addr(), err)
 	}
-	_, err = cli.Register(ctx, &protocol.RegisterRequest{
-		Agent: &protocol.Agent{
-			Actor:         "bob",
-			AgentBindAddr: lst.Addr().String(),
-		},
+	_, err = cli.Ping(ctx, &protocol.PingRequest{
+		PingID:       "",
+		SenderMoment: time.Now().Format(time.RFC3339Nano),
 	})
 	if err != nil {
-		t.Fatalf("Unable to register actor: %v", err)
+		t.Fatalf("Unable to ping agent: %v", err)
 	}
 	e.Shutdown()
 }

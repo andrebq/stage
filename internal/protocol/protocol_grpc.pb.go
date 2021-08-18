@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExchangeClient interface {
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	Deliver(ctx context.Context, in *DeliverRequest, opts ...grpc.CallOption) (*DeliverResponse, error)
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 }
@@ -28,6 +29,15 @@ type exchangeClient struct {
 
 func NewExchangeClient(cc grpc.ClientConnInterface) ExchangeClient {
 	return &exchangeClient{cc}
+}
+
+func (c *exchangeClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, "/protocol.Exchange/Ping", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *exchangeClient) Deliver(ctx context.Context, in *DeliverRequest, opts ...grpc.CallOption) (*DeliverResponse, error) {
@@ -52,6 +62,7 @@ func (c *exchangeClient) Register(ctx context.Context, in *RegisterRequest, opts
 // All implementations must embed UnimplementedExchangeServer
 // for forward compatibility
 type ExchangeServer interface {
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	Deliver(context.Context, *DeliverRequest) (*DeliverResponse, error)
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	mustEmbedUnimplementedExchangeServer()
@@ -61,6 +72,9 @@ type ExchangeServer interface {
 type UnimplementedExchangeServer struct {
 }
 
+func (UnimplementedExchangeServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
 func (UnimplementedExchangeServer) Deliver(context.Context, *DeliverRequest) (*DeliverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Deliver not implemented")
 }
@@ -78,6 +92,24 @@ type UnsafeExchangeServer interface {
 
 func RegisterExchangeServer(s grpc.ServiceRegistrar, srv ExchangeServer) {
 	s.RegisterService(&Exchange_ServiceDesc, srv)
+}
+
+func _Exchange_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExchangeServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protocol.Exchange/Ping",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExchangeServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Exchange_Deliver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -123,6 +155,10 @@ var Exchange_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "protocol.Exchange",
 	HandlerType: (*ExchangeServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Ping",
+			Handler:    _Exchange_Ping_Handler,
+		},
 		{
 			MethodName: "Deliver",
 			Handler:    _Exchange_Deliver_Handler,

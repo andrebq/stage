@@ -36,7 +36,22 @@ message RegisterResponse {
 	bool active = 1;
 }
 
+message PingRequest {
+	string pingID = 1;
+	string senderMoment = 2;
+	string targetAgent = 3;
+}
+
+message PingResponse {
+	string pingID = 1;
+	string senderMoment = 2;
+	string responderMoment = 3;
+	sint64 delayMillis = 4;
+	sint32 hops = 5;
+}
+
 service Exchange {
+	rpc Ping(PingRequest) returns (PingResponse) {}
 	rpc Deliver(DeliverRequest) returns (DeliverResponse) {}
 	rpc Register(RegisterRequest) returns (RegisterResponse) {}
 }
