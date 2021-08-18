@@ -1,5 +1,7 @@
-.PHONY: generate test watch tidy \
+.PHONY: generate test watch tidy dist \
 	grpc_gen
+
+include Runners.mk
 
 generate: internal/protocol/protocol_grpc.pb.go
 	go build ./...
@@ -18,3 +20,6 @@ watch:
 tidy:
 	go fmt ./...
 	go mod tidy
+
+dist:
+	go build -o dist/stage ./cmd/stage

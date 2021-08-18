@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/andrebq/stage/internal/protocol"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
 
 type (
 	exchange struct {
 		sync.RWMutex
+		log zerolog.Logger
 		protocol.UnimplementedExchangeServer
 		catalog map[string]*protocol.Agent
 
@@ -36,11 +38,6 @@ type (
 		entries map[string]*actor
 	}
 
-	actor struct {
-		inbox                  chan *protocol.Message
-		failedDeliveriesInARow int
-	}
-
 	endpoints struct {
 		clients map[string]protocol.ExchangeClient
 	}
@@ -50,13 +47,15 @@ type (
 	Exchange interface {
 		protocol.ExchangeServer
 		AddActor(string, ActorCallback) error
+		RemoveActor(string) error
 		Serve(net.Listener) error
 		Shutdown() error
 	}
 )
 
-func NewExchange(externalAddr string) Exchange {
+func NewExchange(externalAddr string, log zerolog.Logger) Exchange {
 	return &exchange{
+		log:      log.With().Str("package", "github.com/andrebq/stage").Str("component", "internal/server/exchange").Logger(),
 		catalog:  make(map[string]*protocol.Agent),
 		shutdown: make(chan struct{}),
 		stopped:  make(chan struct{}),
@@ -99,6 +98,13 @@ func (e *exchange) Shutdown() error {
 	default:
 	}
 	close(e.shutdown)
+	e.writeLock(func() {
+		for _, a := range e.actors.entries {
+			a.stop()
+		}
+		// nobody should touch the actor table anymore
+		e.actors.entries = nil
+	})
 	if e.lst != nil {
 		e.lst.Close()
 	}
@@ -123,7 +129,7 @@ func (e *exchange) Deliver(ctx context.Context, req *protocol.DeliverRequest) (*
 		return nil, errors.New("agent does not have address for the given agent")
 	}
 	if e.amIThis(agent) {
-		e.deliverLocal(ctx, req)
+		return e.deliverLocal(ctx, req)
 	}
 	return e.deliverRemote(ctx, req, agent)
 }
@@ -146,15 +152,37 @@ func (e *exchange) Ping(ctx context.Context, req *protocol.PingRequest) (*protoc
 	return nil, errors.New("cannot ping other agents for now...")
 }
 
+func (e *exchange) RemoveActor(actorID string) error {
+	var err error
+	e.writeLock(func() {
+		if err = e.stillRunning(); err != nil {
+			return
+		}
+		actor, has := e.actors.entries[actorID]
+		if !has {
+			err = ErrActorNotFound
+		}
+		actor.stop()
+		delete(e.actors.entries, actorID)
+	})
+	return err
+}
+
 func (e *exchange) AddActor(actorID string, callback ActorCallback) error {
 	var err error
 	e.writeLock(func() {
+		if err = e.stillRunning(); err != nil {
+			return
+		}
 		_, has := e.catalog[actorID]
 		if has {
 			err = errors.New("actor with the given ID is already registered in this exchange")
 			return
 		}
 		e.catalog[actorID] = e.self
+		actor := newActor(actorID, callback, e.log)
+		e.actors.entries[actorID] = actor
+		go actor.act()
 	})
 	return err
 }
@@ -167,7 +195,7 @@ func (e *exchange) readLock(fn func()) {
 
 func (e *exchange) writeLock(fn func()) {
 	e.Lock()
-	defer e.RUnlock()
+	defer e.Unlock()
 	fn()
 }
 
@@ -190,5 +218,33 @@ func (e *exchange) amIThis(agent *protocol.Agent) bool {
 }
 
 func (e *exchange) deliverLocal(ctx context.Context, req *protocol.DeliverRequest) (*protocol.DeliverResponse, error) {
-	return nil, errors.New("local delivery not implemented")
+	var actor *actor
+	var has bool
+	var err error
+	e.readLock(func() {
+		if err = e.stillRunning(); err != nil {
+			return
+		}
+		actor, has = e.actors.entries[req.Message.Actor]
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, ErrActorNotFound
+	}
+	return &protocol.DeliverResponse{
+		Delivered: actor.deliver(req.Message),
+	}, nil
+}
+
+func (e *exchange) stillRunning() error {
+	select {
+	case <-e.shutdown:
+		return ErrServerShutdown
+	case <-e.stopped:
+		return ErrServerStopped
+	default:
+		return nil
+	}
 }
