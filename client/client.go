@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-func New(addr string) (protocol.ExchangeClient, error) {
-	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+func New(ctx context.Context, addr string) (protocol.ExchangeClient, error) {
+	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, fmt.Errorf("unable to setup grcp connection with %v, cause %w", addr, err)
 	}
@@ -18,6 +18,12 @@ func New(addr string) (protocol.ExchangeClient, error) {
 
 // Deliver the payload to the given destination using the provided ExchangeClient
 func Deliver(ctx context.Context, exchange protocol.ExchangeClient, destinationID string, senderID string, payload []byte) (bool, error) {
+	if destinationID == "" {
+		return false, ErrMissingDestination
+	}
+	if senderID == "" {
+		return false, ErrMissingSenderID
+	}
 	res, err := exchange.Deliver(ctx, &protocol.DeliverRequest{
 		Message: &protocol.Message{
 			Sender:  senderID,

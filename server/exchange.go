@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -113,10 +114,17 @@ func (e *exchange) Shutdown() error {
 }
 
 func (e *exchange) Register(ctx context.Context, req *protocol.RegisterRequest) (*protocol.RegisterResponse, error) {
-	e.Lock()
-	defer e.Unlock()
-	e.catalog[req.Agent.Actor] = req.Agent
-	return &protocol.RegisterResponse{Active: true}, nil
+	e.log.Debug().Str("actor", req.Agent.GetActor()).Str("agent", req.Agent.GetAgentBindAddr()).Msg("got new actor registration")
+	var err error
+	var response *protocol.RegisterResponse
+	e.writeLock(func() {
+		if err = e.stillRunning(); err != nil {
+			return
+		}
+		e.catalog[req.Agent.Actor] = req.Agent
+		response = &protocol.RegisterResponse{Active: true}
+	})
+	return response, err
 }
 
 func (e *exchange) Deliver(ctx context.Context, req *protocol.DeliverRequest) (*protocol.DeliverResponse, error) {
@@ -153,6 +161,7 @@ func (e *exchange) Ping(ctx context.Context, req *protocol.PingRequest) (*protoc
 }
 
 func (e *exchange) RemoveActor(actorID string) error {
+	e.log.Debug().Str("actor", actorID).Msg("remove actor")
 	var err error
 	e.writeLock(func() {
 		if err = e.stillRunning(); err != nil {
@@ -163,12 +172,14 @@ func (e *exchange) RemoveActor(actorID string) error {
 			err = ErrActorNotFound
 		}
 		actor.stop()
+		delete(e.catalog, actorID)
 		delete(e.actors.entries, actorID)
 	})
 	return err
 }
 
 func (e *exchange) AddActor(actorID string, callback ActorCallback) error {
+	e.log.Debug().Str("actor", actorID).Str("callback", fmt.Sprintf("%p", callback)).Msg("got a new actor")
 	var err error
 	e.writeLock(func() {
 		if err = e.stillRunning(); err != nil {
