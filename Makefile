@@ -20,6 +20,7 @@ watch:
 tidy:
 	go fmt ./...
 	go mod tidy
+	make -C example/wsbridge-ui tidy
 
 dist:
 	go build -o dist/stage ./cmd/stage

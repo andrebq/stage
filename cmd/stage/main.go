@@ -3,15 +3,19 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
 
 	"github.com/andrebq/stage/cmd/sub/exchange"
+	"github.com/andrebq/stage/cmd/sub/helpers"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, done := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer done()
+
 	var debug bool
 	app := &cli.App{
 		Name:  "stage",
@@ -26,6 +30,7 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			exchange.Cmd(),
+			helpers.Cmd(),
 		},
 		Before: func(c *cli.Context) error {
 			if debug {

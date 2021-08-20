@@ -29,7 +29,7 @@ func acquireClientServerPair(t *testing.T) (context.Context, Exchange, protocol.
 	go e.Serve(lst)
 	runtime.Gosched()
 
-	cli, err := client.New(lst.Addr().String())
+	cli, err := client.New(ctx, lst.Addr().String())
 	if err != nil {
 		t.Fatalf("Unable to open a client connection to %v, cause %v", lst.Addr(), err)
 	}
