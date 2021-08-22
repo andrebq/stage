@@ -43,6 +43,7 @@ var upgrader = websocket.Upgrader{
 
 func New(ex server.Exchange, cli protocol.ExchangeClient, logger zerolog.Logger) http.Handler {
 	b := &bridge{
+		client:   cli,
 		exchange: ex,
 		logger:   logger.With().Str("package", "github.com/andrebq/stage").Str("module", "internal/server/wsbridge").Logger(),
 	}

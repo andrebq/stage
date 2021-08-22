@@ -24,3 +24,4 @@ tidy:
 
 dist:
 	go build -o dist/stage ./cmd/stage
+	go build -o dist/jtb ./example/scripted/jtb
