@@ -17,6 +17,12 @@ annoying-echo:
 
 actorid?=hello-actor
 behaviour?=index.js
-jtb:
+jtb: dist
 	go build -o ./dist/jtb ./example/scripted/jtb
 	./dist/jtb -code ./example/scripted/jtb/$(behaviour) -actorID "$(actorid)"
+
+jtb-ping: dist
+	./dist/jtb -code ./example/scripted/jtb/ping.js -actorID "pinger"
+
+jtb-pong: dist
+	./dist/jtb -code ./example/scripted/jtb/pong.js -actorID "pong"
