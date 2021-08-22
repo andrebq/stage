@@ -60,7 +60,8 @@ func (w *WSBridge) Run(ctx context.Context) error {
 	doneReading := make(chan error, 1)
 	doneWriting := make(chan error, 1)
 	go func() {
-		close(doneReading)
+		defer close(doneReading)
+		defer w.c.Close()
 		for {
 			_, buf, err := w.c.ReadMessage()
 			if err != nil {
@@ -76,7 +77,8 @@ func (w *WSBridge) Run(ctx context.Context) error {
 		}
 	}()
 	go func() {
-		close(doneWriting)
+		defer close(doneWriting)
+		defer w.c.Close()
 		for {
 			select {
 			case <-ctx.Done():

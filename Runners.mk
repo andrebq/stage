@@ -16,6 +16,7 @@ annoying-echo:
 	while true; do ./dist/stage helper cat -target=$(target) <<<$(msg); sleep $(delay); done
 
 actorid?=hello-actor
+behaviour?=index.js
 jtb:
 	go build -o ./dist/jtb ./example/scripted/jtb
-	./dist/jtb -code ./example/scripted/jtb/index.js -actorID "$(actorid)"
+	./dist/jtb -code ./example/scripted/jtb/$(behaviour) -actorID "$(actorid)"
