@@ -7,6 +7,7 @@ require (
 	github.com/dop251/goja v0.0.0-20210802212625-c04c64313062
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/mathetake/gasm v0.0.0-20210402230938-71556e50c408
 	github.com/rs/zerolog v1.23.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/valyala/fastjson v1.6.3

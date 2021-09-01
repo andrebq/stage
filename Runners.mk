@@ -26,3 +26,6 @@ jtb-ping: dist
 
 jtb-pong: dist
 	./dist/jtb -code ./example/scripted/jtb/pong.js -actorID "pong"
+
+run-ping-wasm:
+	make -C ./example/scripted/wasm run

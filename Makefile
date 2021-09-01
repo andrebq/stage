@@ -1,10 +1,13 @@
 .PHONY: generate test watch tidy dist \
-	grpc_gen
+	grpc_gen generate-wasm
 
 include Runners.mk
 
-generate: internal/protocol/protocol_grpc.pb.go
+generate: generate-wasm internal/protocol/protocol_grpc.pb.go
 	go build ./...
+
+generate-wasm:
+	make -C ./example/scripted/wasm generate
 
 internal/protocol/protocol_grpc.pb.go: internal/protocol/protocol.proto
 	protoc --go_out=. --go_opt=paths=source_relative \
