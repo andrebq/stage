@@ -26,7 +26,7 @@ func main() {
 	noError(err, "Failed to parse file as a valid WASM binary")
 
 	modules := wasi.New().Modules()
-	err = exportStageFunctions(modules)
+	modules, err = exportStageFunctions(modules)
 	noError(err, "Unable to export stage functions")
 
 	vm, err := wasm.NewVM(mod, modules)
@@ -45,15 +45,18 @@ func main() {
 	}
 }
 
-func exportStageFunctions(m map[string]*wasm.Module) error {
-	b := hostfunc.NewModuleBuilder()
-	var err error
-	err = b.SetFunction("env", "stage_exports_print_number", func(machine *wasm.VirtualMachine) reflect.Value {
-		log.Info().Msg("stage_exports_print_number called")
-		return reflect.ValueOf(0)
+func exportStageFunctions(parent map[string]*wasm.Module) (map[string]*wasm.Module, error) {
+	b := hostfunc.NewModuleBuilderWith(parent)
+	b.MustSetFunction("env", "stage_log_info", func(machine *wasm.VirtualMachine) reflect.Value {
+		return reflect.ValueOf(func(bufPtr, bufLen uint32) {
+			log.Debug().Int("memorySize", len(machine.Memory)).Send()
+			mem := machine.Memory[bufPtr:]
+			str := string(mem[:bufLen])
+			log.Info().Uint32("bufPtr", bufPtr).Uint32("len", bufLen).Str("body", str).Msg("stage_log_info")
+			// str := string(machine.Memory[offset:length])
+			// log.Info().Uint32("offset", offset).Uint32("length", length).Str("body", str).Msg("String from guest to host")
+			// log.Info().Msg("stage_exports_print_number called")
+		})
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return b.Done(), nil
 }
