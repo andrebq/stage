@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"reflect"
 
@@ -35,13 +34,6 @@ func main() {
 	noError(err, "Unable to create memory limits")
 	module, err := wasmer.NewModule(store, buf)
 	noError(err, "Unable to create wasm module")
-	for _, e := range module.Exports() {
-		if e.Type().Kind() == wasmer.MEMORY {
-			if e.Type().IntoMemoryType().Limits().Maximum() > 1000 {
-				panic(fmt.Sprintf("Module is asking for more than 1000 MB: %v", e.Type().IntoMemoryType().Limits().Maximum()))
-			}
-		}
-	}
 
 	// modules := wasi.New().Modules()
 	// modules, err = exportStageFunctions(modules)
@@ -119,7 +111,7 @@ func exportStageFunctionsWASMER(ctx context.Context, instance **wasmer.Instance,
 			}
 			str := string(mem.IntoMemory().Data()[args[0].I32() : args[0].I32()+args[1].I32()])
 			_ = str
-			log.Info().Interface("memory", mem).Int32("ptr", args[0].I32()).Int32("len", args[0].I32()).Str("msg", str).Send()
+			log.Info().Interface("memory", mem).Int32("pages", int32(mem.IntoMemory().Size())).Int32("ptr", args[0].I32()).Int32("len", args[0].I32()).Str("msg", str).Send()
 			// ctx := environment.(context.Context)
 			// _ = ctx
 
