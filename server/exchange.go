@@ -11,6 +11,8 @@ import (
 	"github.com/andrebq/stage/internal/protocol"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type (
@@ -43,7 +45,7 @@ type (
 		clients map[string]protocol.ExchangeClient
 	}
 
-	ActorCallback func(*protocol.Message)
+	ActorCallback func(*protocol.Message, bool)
 
 	Exchange interface {
 		protocol.ExchangeServer
@@ -160,6 +162,83 @@ func (e *exchange) Ping(ctx context.Context, req *protocol.PingRequest) (*protoc
 	return nil, errors.New("cannot ping other agents for now...")
 }
 
+func (e *exchange) Receive(req *protocol.ReceiveRequest, stream protocol.Exchange_ReceiveServer) error {
+	actor := req.GetActorID()
+	policy := req.GetDropPolicy()
+	if actor == "" {
+		return status.Errorf(codes.InvalidArgument, "Invalid actorID")
+	}
+	buf := make([]*protocol.Message, 100)
+	e.RemoveActor(actor)
+	dropCount := int32(0)
+	newMessage := make(chan struct{}, 1)
+	handle := func(m *protocol.Message, removed bool) {
+		if len(buf) == cap(buf) {
+			dropCount++
+			var full bool
+			buf, full = applyDropPolicy(buf, policy)
+			if full {
+				return
+			}
+		}
+		buf = append(buf, m)
+		select {
+		case newMessage <- struct{}{}:
+		default:
+		}
+	}
+	err := e.AddActor(actor, handle)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Unable to register actor %v, cause %v", actor, err)
+	}
+	defer e.RemoveActor(actor)
+	for {
+		select {
+		case <-stream.Context().Done():
+			return status.Errorf(codes.Canceled, stream.Context().Err().Error())
+		case _, open := <-newMessage:
+			if !open {
+				return status.Errorf(codes.Aborted, "Actor %v was removed by external actions", actor)
+			}
+			var msg *protocol.Message
+			var size int
+			msg, size, buf = popHead(buf)
+			stream.Send(&protocol.ReceiveResponse{
+				NextMessage:   msg,
+				DropCount:     dropCount,
+				CurrentBuffer: int32(size),
+			})
+		}
+	}
+}
+
+func popHead(buf []*protocol.Message) (*protocol.Message, int, []*protocol.Message) {
+	if len(buf) == 0 {
+		return nil, 0, buf
+	}
+	m := buf[0]
+	copy(buf[:], buf[1:])
+	buf[len(buf)-1] = nil
+	buf = buf[:len(buf)-2]
+	return m, len(buf), buf
+}
+
+func applyDropPolicy(buf []*protocol.Message, policy protocol.MessageDropPolicy) ([]*protocol.Message, bool) {
+	if policy == protocol.MessageDropPolicy_Unspecified {
+		policy = protocol.MessageDropPolicy_Oldest
+	}
+	switch policy {
+	case protocol.MessageDropPolicy_Newest:
+		buf[len(buf)-1] = nil
+		buf = buf[:len(buf)-2]
+	case protocol.MessageDropPolicy_Oldest:
+		_, _, buf = popHead(buf)
+	case protocol.MessageDropPolicy_Incoming:
+		return buf, true
+	}
+	return buf, false
+}
+
 func (e *exchange) RemoveActor(actorID string) error {
 	e.log.Debug().Str("actor", actorID).Msg("remove actor")
 	var err error
@@ -171,6 +250,7 @@ func (e *exchange) RemoveActor(actorID string) error {
 		if !has {
 			err = ErrActorNotFound
 		}
+		println("calling stop on ", actorID)
 		actor.stop()
 		delete(e.catalog, actorID)
 		delete(e.actors.entries, actorID)

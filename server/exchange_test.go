@@ -65,7 +65,12 @@ func TestSimpleExchange(t *testing.T) {
 	}{
 		done: make(chan struct{}),
 	}
-	exchange.AddActor("bob", func(_ *protocol.Message) {
+	exchange.AddActor("bob", func(_ *protocol.Message, open bool) {
+		println("open", open)
+		if !open {
+			close(bobState.done)
+			return
+		}
 		select {
 		case <-bobState.done:
 			t.Fatal("Multiple delivery attempts")
@@ -76,7 +81,6 @@ func TestSimpleExchange(t *testing.T) {
 		if err := exchange.RemoveActor("bob"); err != nil {
 			t.Fatal("Should have removed bob without problems")
 		}
-		close(bobState.done)
 	})
 
 	delivered, err := client.Deliver(ctx, cli, "bob", "alice", nil)

@@ -64,7 +64,7 @@ func (a *actor) act() {
 	for {
 		select {
 		case msg := <-inbox:
-			go a.handleMsg(msg, done)
+			go a.handleMsg(msg, true, done)
 			// this prevents any new message from being processed
 			// while the old one is still being processed
 			//
@@ -74,6 +74,7 @@ func (a *actor) act() {
 		case <-done:
 			inbox = a.inbox
 		case <-a.teardown:
+			go a.handleMsg(nil, false, done)
 			return
 		}
 	}
@@ -89,9 +90,9 @@ func (a *actor) deliver(msg *protocol.Message) bool {
 	}
 }
 
-func (a *actor) handleMsg(msg *protocol.Message, done chan struct{}) {
+func (a *actor) handleMsg(msg *protocol.Message, open bool, done chan struct{}) {
 	err := dontPanic(func() {
-		a.callback(msg)
+		a.callback(msg, open)
 	})
 	if err != nil {
 		a.log.Error().Err(err).Bool("panic", true).Msg("actor recovered from a panic")

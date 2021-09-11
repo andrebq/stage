@@ -74,7 +74,12 @@ func (b *bridge) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer c.Close()
-	err = b.exchange.AddActor(actorID, func(m *protocol.Message) {
+	err = b.exchange.AddActor(actorID, func(m *protocol.Message, open bool) {
+		if !open {
+			log.Info().Msg("Actor removed")
+			c.Close()
+			return
+		}
 		var pl json.RawMessage
 		pl = json.RawMessage(m.Payload)
 		if err := fastjson.ValidateBytes([]byte(pl)); err != nil {

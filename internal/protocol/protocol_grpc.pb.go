@@ -21,6 +21,7 @@ type ExchangeClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	Deliver(ctx context.Context, in *DeliverRequest, opts ...grpc.CallOption) (*DeliverResponse, error)
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	Receive(ctx context.Context, in *ReceiveRequest, opts ...grpc.CallOption) (Exchange_ReceiveClient, error)
 }
 
 type exchangeClient struct {
@@ -58,6 +59,38 @@ func (c *exchangeClient) Register(ctx context.Context, in *RegisterRequest, opts
 	return out, nil
 }
 
+func (c *exchangeClient) Receive(ctx context.Context, in *ReceiveRequest, opts ...grpc.CallOption) (Exchange_ReceiveClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Exchange_ServiceDesc.Streams[0], "/protocol.Exchange/Receive", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &exchangeReceiveClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Exchange_ReceiveClient interface {
+	Recv() (*ReceiveResponse, error)
+	grpc.ClientStream
+}
+
+type exchangeReceiveClient struct {
+	grpc.ClientStream
+}
+
+func (x *exchangeReceiveClient) Recv() (*ReceiveResponse, error) {
+	m := new(ReceiveResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ExchangeServer is the server API for Exchange service.
 // All implementations must embed UnimplementedExchangeServer
 // for forward compatibility
@@ -65,6 +98,7 @@ type ExchangeServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	Deliver(context.Context, *DeliverRequest) (*DeliverResponse, error)
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	Receive(*ReceiveRequest, Exchange_ReceiveServer) error
 	mustEmbedUnimplementedExchangeServer()
 }
 
@@ -80,6 +114,9 @@ func (UnimplementedExchangeServer) Deliver(context.Context, *DeliverRequest) (*D
 }
 func (UnimplementedExchangeServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
+}
+func (UnimplementedExchangeServer) Receive(*ReceiveRequest, Exchange_ReceiveServer) error {
+	return status.Errorf(codes.Unimplemented, "method Receive not implemented")
 }
 func (UnimplementedExchangeServer) mustEmbedUnimplementedExchangeServer() {}
 
@@ -148,6 +185,27 @@ func _Exchange_Register_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Exchange_Receive_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReceiveRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ExchangeServer).Receive(m, &exchangeReceiveServer{stream})
+}
+
+type Exchange_ReceiveServer interface {
+	Send(*ReceiveResponse) error
+	grpc.ServerStream
+}
+
+type exchangeReceiveServer struct {
+	grpc.ServerStream
+}
+
+func (x *exchangeReceiveServer) Send(m *ReceiveResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Exchange_ServiceDesc is the grpc.ServiceDesc for Exchange service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +226,12 @@ var Exchange_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Exchange_Register_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Receive",
+			Handler:       _Exchange_Receive_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "internal/protocol/protocol.proto",
 }

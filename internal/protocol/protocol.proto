@@ -50,8 +50,33 @@ message PingResponse {
 	sint32 hops = 5;
 }
 
+enum MessageDropPolicy {
+	// let the exchange decided what it thinks is the
+	// best approach
+	Unspecified = 0;
+	Incoming = 1;
+	Oldest = 2;
+	Newest = 3;
+}
+
+message ReceiveRequest {
+	string actorID = 1;
+	MessageDropPolicy dropPolicy = 2;
+}
+
+message ReceiveResponse {
+	Message nextMessage = 1;
+
+	// how many messages where dropped
+	sint32 dropCount = 2;
+
+	// how many messages in the buffer
+	sint32 currentBuffer = 3;
+}
+
 service Exchange {
 	rpc Ping(PingRequest) returns (PingResponse) {}
 	rpc Deliver(DeliverRequest) returns (DeliverResponse) {}
 	rpc Register(RegisterRequest) returns (RegisterResponse) {}
+	rpc Receive(ReceiveRequest) returns (stream ReceiveResponse) {}
 }
