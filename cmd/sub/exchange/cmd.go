@@ -4,11 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/andrebq/stage/client"
 	"github.com/andrebq/stage/internal/protocol"
-	"github.com/andrebq/stage/server"
-	"github.com/andrebq/stage/server/wsbridge"
-	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -54,44 +50,45 @@ func Cmd() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			log.Logger = log.Logger.With().Str("fullCmd", c.Command.FullName()).Logger()
-			if external == "" {
-				external = bindAddr
-			}
-			ctx, cancel := context.WithCancel(c.Context)
-			exchange := server.NewExchange(external, log.Logger)
+			// log.Logger = log.Logger.With().Str("fullCmd", c.Command.FullName()).Logger()
+			// if external == "" {
+			// 	external = bindAddr
+			// }
+			// ctx, cancel := context.WithCancel(c.Context)
+			// exchange := server.NewExchange(external, log.Logger)
 
-			var exchangeDone <-chan error
-			var bridgeDone <-chan error
+			// var exchangeDone <-chan error
+			// var bridgeDone <-chan error
 
-			exchangeDone = async(func() error {
-				log.Info().Str("external", external).Str("bind", bindAddr).Msg("Starting exchange.")
-				return server.ListenAndServe(ctx, bindAddr, exchange)
-			})
-			if enableBridge {
-				cli, err := client.New(ctx, bindAddr)
-				if err != nil {
-					cancel()
-					return err
-				}
-				bridgeDone = async(func() error {
-					log.Info().Str("external", external).Str("bind", bindAddr).Str("bridgeBind", bridgeBind).Msg("Starting bridge.")
-					return wsbridge.ListenAndServe(ctx, wsbridge.New(exchange, cli, log.Logger), bridgeBind)
-				})
-			}
+			// exchangeDone = async(func() error {
+			// 	log.Info().Str("external", external).Str("bind", bindAddr).Msg("Starting exchange.")
+			// 	return server.ListenAndServe(ctx, bindAddr, exchange)
+			// })
+			// if enableBridge {
+			// 	cli, err := client.New(ctx, bindAddr)
+			// 	if err != nil {
+			// 		cancel()
+			// 		return err
+			// 	}
+			// 	bridgeDone = async(func() error {
+			// 		log.Info().Str("external", external).Str("bind", bindAddr).Str("bridgeBind", bridgeBind).Msg("Starting bridge.")
+			// 		return wsbridge.ListenAndServe(ctx, wsbridge.New(exchange, cli, log.Logger), bridgeBind)
+			// 	})
+			// }
 
-			exchangeError := <-exchangeDone
-			cancel()
-			if exchangeError != nil {
-				log.Error().Err(exchangeError).Msg("Exchange error")
-			}
-			if bridgeDone != nil {
-				bridgeError := <-bridgeDone
-				if bridgeError != nil {
-					log.Error().Err(bridgeError).Msg("Bridge error")
-				}
-			}
-			return exchangeError
+			// exchangeError := <-exchangeDone
+			// cancel()
+			// if exchangeError != nil {
+			// 	log.Error().Err(exchangeError).Msg("Exchange error")
+			// }
+			// if bridgeDone != nil {
+			// 	bridgeError := <-bridgeDone
+			// 	if bridgeError != nil {
+			// 		log.Error().Err(bridgeError).Msg("Bridge error")
+			// 	}
+			// }
+			// return exchangeError
+			return nil
 		},
 	}
 }

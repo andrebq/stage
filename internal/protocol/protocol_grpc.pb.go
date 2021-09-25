@@ -14,14 +14,133 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
+// CatalogClient is the client API for Catalog service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type CatalogClient interface {
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	Address(ctx context.Context, in *AddressList, opts ...grpc.CallOption) (*AddressList, error)
+}
+
+type catalogClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewCatalogClient(cc grpc.ClientConnInterface) CatalogClient {
+	return &catalogClient{cc}
+}
+
+func (c *catalogClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
+	out := new(RegisterResponse)
+	err := c.cc.Invoke(ctx, "/protocol.Catalog/Register", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *catalogClient) Address(ctx context.Context, in *AddressList, opts ...grpc.CallOption) (*AddressList, error) {
+	out := new(AddressList)
+	err := c.cc.Invoke(ctx, "/protocol.Catalog/Address", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CatalogServer is the server API for Catalog service.
+// All implementations must embed UnimplementedCatalogServer
+// for forward compatibility
+type CatalogServer interface {
+	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	Address(context.Context, *AddressList) (*AddressList, error)
+	mustEmbedUnimplementedCatalogServer()
+}
+
+// UnimplementedCatalogServer must be embedded to have forward compatible implementations.
+type UnimplementedCatalogServer struct {
+}
+
+func (UnimplementedCatalogServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
+}
+func (UnimplementedCatalogServer) Address(context.Context, *AddressList) (*AddressList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Address not implemented")
+}
+func (UnimplementedCatalogServer) mustEmbedUnimplementedCatalogServer() {}
+
+// UnsafeCatalogServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CatalogServer will
+// result in compilation errors.
+type UnsafeCatalogServer interface {
+	mustEmbedUnimplementedCatalogServer()
+}
+
+func RegisterCatalogServer(s grpc.ServiceRegistrar, srv CatalogServer) {
+	s.RegisterService(&Catalog_ServiceDesc, srv)
+}
+
+func _Catalog_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CatalogServer).Register(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protocol.Catalog/Register",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CatalogServer).Register(ctx, req.(*RegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Catalog_Address_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddressList)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CatalogServer).Address(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/protocol.Catalog/Address",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CatalogServer).Address(ctx, req.(*AddressList))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Catalog_ServiceDesc is the grpc.ServiceDesc for Catalog service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Catalog_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "protocol.Catalog",
+	HandlerType: (*CatalogServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Register",
+			Handler:    _Catalog_Register_Handler,
+		},
+		{
+			MethodName: "Address",
+			Handler:    _Catalog_Address_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal/protocol/protocol.proto",
+}
+
 // ExchangeClient is the client API for Exchange service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExchangeClient interface {
-	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	Deliver(ctx context.Context, in *DeliverRequest, opts ...grpc.CallOption) (*DeliverResponse, error)
-	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
-	Receive(ctx context.Context, in *ReceiveRequest, opts ...grpc.CallOption) (Exchange_ReceiveClient, error)
+	Send(ctx context.Context, in *SendRequest, opts ...grpc.CallOption) (*SendResponse, error)
 }
 
 type exchangeClient struct {
@@ -32,73 +151,20 @@ func NewExchangeClient(cc grpc.ClientConnInterface) ExchangeClient {
 	return &exchangeClient{cc}
 }
 
-func (c *exchangeClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
-	out := new(PingResponse)
-	err := c.cc.Invoke(ctx, "/protocol.Exchange/Ping", in, out, opts...)
+func (c *exchangeClient) Send(ctx context.Context, in *SendRequest, opts ...grpc.CallOption) (*SendResponse, error) {
+	out := new(SendResponse)
+	err := c.cc.Invoke(ctx, "/protocol.Exchange/Send", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
-}
-
-func (c *exchangeClient) Deliver(ctx context.Context, in *DeliverRequest, opts ...grpc.CallOption) (*DeliverResponse, error) {
-	out := new(DeliverResponse)
-	err := c.cc.Invoke(ctx, "/protocol.Exchange/Deliver", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *exchangeClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
-	out := new(RegisterResponse)
-	err := c.cc.Invoke(ctx, "/protocol.Exchange/Register", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *exchangeClient) Receive(ctx context.Context, in *ReceiveRequest, opts ...grpc.CallOption) (Exchange_ReceiveClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Exchange_ServiceDesc.Streams[0], "/protocol.Exchange/Receive", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &exchangeReceiveClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Exchange_ReceiveClient interface {
-	Recv() (*ReceiveResponse, error)
-	grpc.ClientStream
-}
-
-type exchangeReceiveClient struct {
-	grpc.ClientStream
-}
-
-func (x *exchangeReceiveClient) Recv() (*ReceiveResponse, error) {
-	m := new(ReceiveResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 // ExchangeServer is the server API for Exchange service.
 // All implementations must embed UnimplementedExchangeServer
 // for forward compatibility
 type ExchangeServer interface {
-	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	Deliver(context.Context, *DeliverRequest) (*DeliverResponse, error)
-	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
-	Receive(*ReceiveRequest, Exchange_ReceiveServer) error
+	Send(context.Context, *SendRequest) (*SendResponse, error)
 	mustEmbedUnimplementedExchangeServer()
 }
 
@@ -106,17 +172,8 @@ type ExchangeServer interface {
 type UnimplementedExchangeServer struct {
 }
 
-func (UnimplementedExchangeServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
-}
-func (UnimplementedExchangeServer) Deliver(context.Context, *DeliverRequest) (*DeliverResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Deliver not implemented")
-}
-func (UnimplementedExchangeServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
-}
-func (UnimplementedExchangeServer) Receive(*ReceiveRequest, Exchange_ReceiveServer) error {
-	return status.Errorf(codes.Unimplemented, "method Receive not implemented")
+func (UnimplementedExchangeServer) Send(context.Context, *SendRequest) (*SendResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
 func (UnimplementedExchangeServer) mustEmbedUnimplementedExchangeServer() {}
 
@@ -131,79 +188,22 @@ func RegisterExchangeServer(s grpc.ServiceRegistrar, srv ExchangeServer) {
 	s.RegisterService(&Exchange_ServiceDesc, srv)
 }
 
-func _Exchange_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PingRequest)
+func _Exchange_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ExchangeServer).Ping(ctx, in)
+		return srv.(ExchangeServer).Send(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protocol.Exchange/Ping",
+		FullMethod: "/protocol.Exchange/Send",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExchangeServer).Ping(ctx, req.(*PingRequest))
+		return srv.(ExchangeServer).Send(ctx, req.(*SendRequest))
 	}
 	return interceptor(ctx, in, info, handler)
-}
-
-func _Exchange_Deliver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeliverRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ExchangeServer).Deliver(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/protocol.Exchange/Deliver",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExchangeServer).Deliver(ctx, req.(*DeliverRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Exchange_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ExchangeServer).Register(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/protocol.Exchange/Register",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExchangeServer).Register(ctx, req.(*RegisterRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Exchange_Receive_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ReceiveRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ExchangeServer).Receive(m, &exchangeReceiveServer{stream})
-}
-
-type Exchange_ReceiveServer interface {
-	Send(*ReceiveResponse) error
-	grpc.ServerStream
-}
-
-type exchangeReceiveServer struct {
-	grpc.ServerStream
-}
-
-func (x *exchangeReceiveServer) Send(m *ReceiveResponse) error {
-	return x.ServerStream.SendMsg(m)
 }
 
 // Exchange_ServiceDesc is the grpc.ServiceDesc for Exchange service.
@@ -214,24 +214,10 @@ var Exchange_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ExchangeServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Ping",
-			Handler:    _Exchange_Ping_Handler,
-		},
-		{
-			MethodName: "Deliver",
-			Handler:    _Exchange_Deliver_Handler,
-		},
-		{
-			MethodName: "Register",
-			Handler:    _Exchange_Register_Handler,
+			MethodName: "Send",
+			Handler:    _Exchange_Send_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "Receive",
-			Handler:       _Exchange_Receive_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "internal/protocol/protocol.proto",
 }

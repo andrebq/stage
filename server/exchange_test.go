@@ -2,18 +2,37 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net"
-	"runtime"
 	"testing"
-	"time"
 
-	"github.com/andrebq/stage/client"
-	"github.com/andrebq/stage/internal/protocol"
-	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
 )
 
+func acquireClientConnection(t *testing.T, endpoint string) (grpc.ClientConnInterface, func()) {
+	cc, err := grpc.DialContext(context.Background(), endpoint, grpc.WithInsecure())
+	noFailure(t, err, "Unable to establish a connection to %v", endpoint)
+	return cc, func() {
+		err = cc.Close()
+		if err != nil {
+			t.Logf("Unable to close client connection cleanly, cause %v", err)
+		}
+	}
+}
+
+func startServer(t *testing.T, server Server) (net.Listener, func()) {
+	lst, done := acquireListener(t)
+	go func() {
+		err := server.Serve(lst)
+		if err != nil {
+			t.Log("start-server", "listener", lst.Addr().String(), err)
+		}
+	}()
+	return lst, done
+}
+
 func acquireListener(t *testing.T) (net.Listener, func()) {
-	lst, err := net.Listen("tcp", "127.0.01:0")
+	lst, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,80 +41,17 @@ func acquireListener(t *testing.T) (net.Listener, func()) {
 	}
 }
 
-func acquireClientServerPair(t *testing.T) (context.Context, Exchange, protocol.ExchangeClient, func()) {
-	ctx := context.Background()
-	lst, closeListener := acquireListener(t)
-	e := NewExchange("", zerolog.Nop())
-	go e.Serve(lst)
-	runtime.Gosched()
-
-	cli, err := client.New(ctx, lst.Addr().String())
-	if err != nil {
-		t.Fatalf("Unable to open a client connection to %v, cause %v", lst.Addr(), err)
+func noFailure(t *testing.T, err error, str string, args ...interface{}) {
+	if err == nil {
+		return
 	}
-	return ctx, e, cli, func() {
-		e.Shutdown()
-		closeListener()
-		// add any client cleanup if needed
-	}
+	t.Fatalf("%v! cause: %v", fmt.Sprintf(str, args...), err)
 }
 
 func TestStartExchange(t *testing.T) {
-	ctx, _, cli, done := acquireClientServerPair(t)
-	defer done()
-	_, err := cli.Ping(ctx, &protocol.PingRequest{
-		PingID:       "",
-		SenderMoment: time.Now().Format(time.RFC3339Nano),
-	})
-	if err != nil {
-		t.Fatalf("Unable to ping agent: %v", err)
-	}
+	t.Fail()
 }
 
 func TestSimpleExchange(t *testing.T) {
-	ctx, exchange, cli, done := acquireClientServerPair(t)
-	defer done()
-
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-
-	bobState := struct {
-		msgs int
-		done chan struct{}
-	}{
-		done: make(chan struct{}),
-	}
-	exchange.AddActor("bob", func(_ *protocol.Message, open bool) {
-		println("open", open)
-		if !open {
-			close(bobState.done)
-			return
-		}
-		select {
-		case <-bobState.done:
-			t.Fatal("Multiple delivery attempts")
-			return
-		default:
-		}
-		bobState.msgs++
-		if err := exchange.RemoveActor("bob"); err != nil {
-			t.Fatal("Should have removed bob without problems")
-		}
-	})
-
-	delivered, err := client.Deliver(ctx, cli, "bob", "alice", nil)
-	if err != nil {
-		t.Fatalf("Unable to ping agent: %v", err)
-	}
-	if !delivered {
-		t.Fatalf("Expecting the message to be delivered to the actor")
-	}
-	select {
-	case <-ctx.Done():
-		t.Fatal("Timeout before bob had time to finish its work")
-	case <-bobState.done:
-		if bobState.msgs != 1 {
-			t.Fatalf("Bob should have received %v msgs but got %v", 1, bobState.msgs)
-		}
-	}
+	t.Fail()
 }
