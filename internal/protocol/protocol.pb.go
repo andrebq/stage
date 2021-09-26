@@ -350,6 +350,100 @@ func (x *SendRequest) GetMessages() []*Message {
 	return nil
 }
 
+type RecvRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Actors []string `protobuf:"bytes,1,rep,name=actors,proto3" json:"actors,omitempty"`
+}
+
+func (x *RecvRequest) Reset() {
+	*x = RecvRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_protocol_protocol_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RecvRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecvRequest) ProtoMessage() {}
+
+func (x *RecvRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_protocol_protocol_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecvRequest.ProtoReflect.Descriptor instead.
+func (*RecvRequest) Descriptor() ([]byte, []int) {
+	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *RecvRequest) GetActors() []string {
+	if x != nil {
+		return x.Actors
+	}
+	return nil
+}
+
+type RecvResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Items []*Message `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+}
+
+func (x *RecvResponse) Reset() {
+	*x = RecvResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_protocol_protocol_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RecvResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecvResponse) ProtoMessage() {}
+
+func (x *RecvResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_protocol_protocol_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecvResponse.ProtoReflect.Descriptor instead.
+func (*RecvResponse) Descriptor() ([]byte, []int) {
+	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *RecvResponse) GetItems() []*Message {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 type SendResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -361,7 +455,7 @@ type SendResponse struct {
 func (x *SendResponse) Reset() {
 	*x = SendResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_protocol_protocol_proto_msgTypes[6]
+		mi := &file_internal_protocol_protocol_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -374,7 +468,7 @@ func (x *SendResponse) String() string {
 func (*SendResponse) ProtoMessage() {}
 
 func (x *SendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_protocol_protocol_proto_msgTypes[6]
+	mi := &file_internal_protocol_protocol_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -387,7 +481,7 @@ func (x *SendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendResponse.ProtoReflect.Descriptor instead.
 func (*SendResponse) Descriptor() ([]byte, []int) {
-	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{6}
+	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SendResponse) GetDelivered() []*MessageIdentity {
@@ -408,7 +502,7 @@ type AddressList struct {
 func (x *AddressList) Reset() {
 	*x = AddressList{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_protocol_protocol_proto_msgTypes[7]
+		mi := &file_internal_protocol_protocol_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -421,7 +515,7 @@ func (x *AddressList) String() string {
 func (*AddressList) ProtoMessage() {}
 
 func (x *AddressList) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_protocol_protocol_proto_msgTypes[7]
+	mi := &file_internal_protocol_protocol_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -434,7 +528,7 @@ func (x *AddressList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddressList.ProtoReflect.Descriptor instead.
 func (*AddressList) Descriptor() ([]byte, []int) {
-	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{7}
+	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AddressList) GetAddresses() []*Address {
@@ -456,7 +550,7 @@ type Address struct {
 func (x *Address) Reset() {
 	*x = Address{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_protocol_protocol_proto_msgTypes[8]
+		mi := &file_internal_protocol_protocol_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -469,7 +563,7 @@ func (x *Address) String() string {
 func (*Address) ProtoMessage() {}
 
 func (x *Address) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_protocol_protocol_proto_msgTypes[8]
+	mi := &file_internal_protocol_protocol_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -482,7 +576,7 @@ func (x *Address) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Address.ProtoReflect.Descriptor instead.
 func (*Address) Descriptor() ([]byte, []int) {
-	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{8}
+	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Address) GetActor() string {
@@ -497,6 +591,61 @@ func (x *Address) GetEndpoint() string {
 		return x.Endpoint
 	}
 	return ""
+}
+
+type Echo struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SentTime int64 `protobuf:"varint,1,opt,name=sentTime,proto3" json:"sentTime,omitempty"`
+	RecvTime int64 `protobuf:"varint,2,opt,name=recvTime,proto3" json:"recvTime,omitempty"`
+}
+
+func (x *Echo) Reset() {
+	*x = Echo{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_protocol_protocol_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Echo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Echo) ProtoMessage() {}
+
+func (x *Echo) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_protocol_protocol_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Echo.ProtoReflect.Descriptor instead.
+func (*Echo) Descriptor() ([]byte, []int) {
+	return file_internal_protocol_protocol_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *Echo) GetSentTime() int64 {
+	if x != nil {
+		return x.SentTime
+	}
+	return 0
+}
+
+func (x *Echo) GetRecvTime() int64 {
+	if x != nil {
+		return x.RecvTime
+	}
+	return 0
 }
 
 var File_internal_protocol_protocol_proto protoreflect.FileDescriptor
@@ -533,7 +682,13 @@ var file_internal_protocol_protocol_proto_rawDesc = []byte{
 	0x65, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2d, 0x0a, 0x08, 0x6d, 0x65,
 	0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52,
-	0x08, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x22, 0x47, 0x0a, 0x0c, 0x53, 0x65, 0x6e,
+	0x08, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x22, 0x25, 0x0a, 0x0b, 0x52, 0x65, 0x63,
+	0x76, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x63, 0x74, 0x6f,
+	0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x61, 0x63, 0x74, 0x6f, 0x72, 0x73,
+	0x22, 0x37, 0x0a, 0x0c, 0x52, 0x65, 0x63, 0x76, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x27, 0x0a, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32,
+	0x11, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61,
+	0x67, 0x65, 0x52, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x22, 0x47, 0x0a, 0x0c, 0x53, 0x65, 0x6e,
 	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x37, 0x0a, 0x09, 0x64, 0x65, 0x6c,
 	0x69, 0x76, 0x65, 0x72, 0x65, 0x64, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x49,
@@ -545,8 +700,12 @@ var file_internal_protocol_protocol_proto_rawDesc = []byte{
 	0x65, 0x73, 0x22, 0x3b, 0x0a, 0x07, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x14, 0x0a,
 	0x05, 0x61, 0x63, 0x74, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x61, 0x63,
 	0x74, 0x6f, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x65, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x65, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x32,
-	0x89, 0x01, 0x0a, 0x07, 0x43, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x12, 0x43, 0x0a, 0x08, 0x52,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x65, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x22,
+	0x3e, 0x0a, 0x04, 0x45, 0x63, 0x68, 0x6f, 0x12, 0x1a, 0x0a, 0x08, 0x73, 0x65, 0x6e, 0x74, 0x54,
+	0x69, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x73, 0x65, 0x6e, 0x74, 0x54,
+	0x69, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x63, 0x76, 0x54, 0x69, 0x6d, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x72, 0x65, 0x63, 0x76, 0x54, 0x69, 0x6d, 0x65, 0x32,
+	0xb3, 0x01, 0x0a, 0x07, 0x43, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x12, 0x43, 0x0a, 0x08, 0x52,
 	0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x12, 0x19, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63,
 	0x6f, 0x6c, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65,
 	0x73, 0x74, 0x1a, 0x1a, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x52, 0x65,
@@ -554,15 +713,28 @@ var file_internal_protocol_protocol_proto_rawDesc = []byte{
 	0x12, 0x39, 0x0a, 0x07, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x15, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x4c, 0x69,
 	0x73, 0x74, 0x1a, 0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x41, 0x64,
-	0x64, 0x72, 0x65, 0x73, 0x73, 0x4c, 0x69, 0x73, 0x74, 0x22, 0x00, 0x32, 0x43, 0x0a, 0x08, 0x45,
-	0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x37, 0x0a, 0x04, 0x53, 0x65, 0x6e, 0x64, 0x12,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x4c, 0x69, 0x73, 0x74, 0x22, 0x00, 0x12, 0x28, 0x0a, 0x04, 0x50,
+	0x69, 0x6e, 0x67, 0x12, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x45,
+	0x63, 0x68, 0x6f, 0x1a, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x45,
+	0x63, 0x68, 0x6f, 0x22, 0x00, 0x32, 0xeb, 0x01, 0x0a, 0x08, 0x45, 0x78, 0x63, 0x68, 0x61, 0x6e,
+	0x67, 0x65, 0x12, 0x43, 0x0a, 0x08, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x12, 0x19,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74,
+	0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1a, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x37, 0x0a, 0x04, 0x53, 0x65, 0x6e, 0x64, 0x12,
 	0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x52,
 	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f,
 	0x6c, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00,
-	0x42, 0x2c, 0x5a, 0x2a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x61,
-	0x6e, 0x64, 0x72, 0x65, 0x62, 0x71, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x2f, 0x69, 0x6e, 0x74,
-	0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x12, 0x37, 0x0a, 0x04, 0x52, 0x65, 0x63, 0x76, 0x12, 0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x63, 0x6f, 0x6c, 0x2e, 0x52, 0x65, 0x63, 0x76, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x16, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x52, 0x65, 0x63, 0x76, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x28, 0x0a, 0x04, 0x50, 0x69, 0x6e,
+	0x67, 0x12, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x45, 0x63, 0x68,
+	0x6f, 0x1a, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x45, 0x63, 0x68,
+	0x6f, 0x22, 0x00, 0x42, 0x2c, 0x5a, 0x2a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x61, 0x6e, 0x64, 0x72, 0x65, 0x62, 0x71, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x2f,
+	0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f,
+	0x6c, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -577,7 +749,7 @@ func file_internal_protocol_protocol_proto_rawDescGZIP() []byte {
 	return file_internal_protocol_protocol_proto_rawDescData
 }
 
-var file_internal_protocol_protocol_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_internal_protocol_protocol_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_internal_protocol_protocol_proto_goTypes = []interface{}{
 	(*Message)(nil),          // 0: protocol.Message
 	(*MessageIdentity)(nil),  // 1: protocol.MessageIdentity
@@ -585,27 +757,39 @@ var file_internal_protocol_protocol_proto_goTypes = []interface{}{
 	(*RegisterRequest)(nil),  // 3: protocol.RegisterRequest
 	(*RegisterResponse)(nil), // 4: protocol.RegisterResponse
 	(*SendRequest)(nil),      // 5: protocol.SendRequest
-	(*SendResponse)(nil),     // 6: protocol.SendResponse
-	(*AddressList)(nil),      // 7: protocol.AddressList
-	(*Address)(nil),          // 8: protocol.Address
+	(*RecvRequest)(nil),      // 6: protocol.RecvRequest
+	(*RecvResponse)(nil),     // 7: protocol.RecvResponse
+	(*SendResponse)(nil),     // 8: protocol.SendResponse
+	(*AddressList)(nil),      // 9: protocol.AddressList
+	(*Address)(nil),          // 10: protocol.Address
+	(*Echo)(nil),             // 11: protocol.Echo
 }
 var file_internal_protocol_protocol_proto_depIdxs = []int32{
-	1, // 0: protocol.Message.identity:type_name -> protocol.MessageIdentity
-	2, // 1: protocol.Message.labels:type_name -> protocol.Label
-	0, // 2: protocol.SendRequest.messages:type_name -> protocol.Message
-	1, // 3: protocol.SendResponse.delivered:type_name -> protocol.MessageIdentity
-	8, // 4: protocol.AddressList.addresses:type_name -> protocol.Address
-	3, // 5: protocol.Catalog.Register:input_type -> protocol.RegisterRequest
-	7, // 6: protocol.Catalog.Address:input_type -> protocol.AddressList
-	5, // 7: protocol.Exchange.Send:input_type -> protocol.SendRequest
-	4, // 8: protocol.Catalog.Register:output_type -> protocol.RegisterResponse
-	7, // 9: protocol.Catalog.Address:output_type -> protocol.AddressList
-	6, // 10: protocol.Exchange.Send:output_type -> protocol.SendResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	1,  // 0: protocol.Message.identity:type_name -> protocol.MessageIdentity
+	2,  // 1: protocol.Message.labels:type_name -> protocol.Label
+	0,  // 2: protocol.SendRequest.messages:type_name -> protocol.Message
+	0,  // 3: protocol.RecvResponse.items:type_name -> protocol.Message
+	1,  // 4: protocol.SendResponse.delivered:type_name -> protocol.MessageIdentity
+	10, // 5: protocol.AddressList.addresses:type_name -> protocol.Address
+	3,  // 6: protocol.Catalog.Register:input_type -> protocol.RegisterRequest
+	9,  // 7: protocol.Catalog.Address:input_type -> protocol.AddressList
+	11, // 8: protocol.Catalog.Ping:input_type -> protocol.Echo
+	3,  // 9: protocol.Exchange.Register:input_type -> protocol.RegisterRequest
+	5,  // 10: protocol.Exchange.Send:input_type -> protocol.SendRequest
+	6,  // 11: protocol.Exchange.Recv:input_type -> protocol.RecvRequest
+	11, // 12: protocol.Exchange.Ping:input_type -> protocol.Echo
+	4,  // 13: protocol.Catalog.Register:output_type -> protocol.RegisterResponse
+	9,  // 14: protocol.Catalog.Address:output_type -> protocol.AddressList
+	11, // 15: protocol.Catalog.Ping:output_type -> protocol.Echo
+	4,  // 16: protocol.Exchange.Register:output_type -> protocol.RegisterResponse
+	8,  // 17: protocol.Exchange.Send:output_type -> protocol.SendResponse
+	7,  // 18: protocol.Exchange.Recv:output_type -> protocol.RecvResponse
+	11, // 19: protocol.Exchange.Ping:output_type -> protocol.Echo
+	13, // [13:20] is the sub-list for method output_type
+	6,  // [6:13] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_internal_protocol_protocol_proto_init() }
@@ -687,7 +871,7 @@ func file_internal_protocol_protocol_proto_init() {
 			}
 		}
 		file_internal_protocol_protocol_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SendResponse); i {
+			switch v := v.(*RecvRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -699,7 +883,7 @@ func file_internal_protocol_protocol_proto_init() {
 			}
 		}
 		file_internal_protocol_protocol_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddressList); i {
+			switch v := v.(*RecvResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -711,7 +895,43 @@ func file_internal_protocol_protocol_proto_init() {
 			}
 		}
 		file_internal_protocol_protocol_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SendResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_internal_protocol_protocol_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddressList); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_internal_protocol_protocol_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Address); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_internal_protocol_protocol_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Echo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -729,7 +949,7 @@ func file_internal_protocol_protocol_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_internal_protocol_protocol_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

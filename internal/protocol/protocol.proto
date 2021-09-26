@@ -34,6 +34,14 @@ message SendRequest {
 	repeated Message messages = 1;
 }
 
+message RecvRequest {
+	repeated string actors = 1;
+}
+
+message RecvResponse {
+	repeated Message items = 1;
+}
+
 message SendResponse {
 	repeated MessageIdentity delivered = 1;
 }
@@ -47,11 +55,20 @@ message Address {
 	string endpoint = 2;
 }
 
+message Echo {
+	int64 sentTime = 1;
+	int64 recvTime = 2;
+}
+
 service Catalog {
 	rpc Register(RegisterRequest) returns (RegisterResponse) {}
 	rpc Address(AddressList) returns (AddressList) {}
+	rpc Ping(Echo) returns (Echo) {}
 }
 
 service Exchange {
+	rpc Register(RegisterRequest) returns (RegisterResponse) {}
 	rpc Send(SendRequest) returns (SendResponse) {}
+	rpc Recv(RecvRequest) returns (RecvResponse) {}
+	rpc Ping(Echo) returns (Echo) {}
 }

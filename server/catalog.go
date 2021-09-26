@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/andrebq/stage/internal/protocol"
 	"google.golang.org/grpc"
@@ -81,6 +82,9 @@ func (c *Catalog) init() {
 	}
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	if c.initDone {
+		return
+	}
 	c.entries = make(map[string]*url.URL)
 	c.initDone = true
 }
@@ -108,6 +112,11 @@ func (cs catalogServer) Address(ctx context.Context, req *protocol.AddressList) 
 	for i := range req.Addresses {
 		req.GetAddresses()[i].Endpoint = endpoints[i]
 	}
+	return req, nil
+}
+
+func (cs catalogServer) Ping(ctx context.Context, req *protocol.Echo) (*protocol.Echo, error) {
+	req.RecvTime = time.Now().UnixNano()
 	return req, nil
 }
 

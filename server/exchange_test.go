@@ -2,54 +2,28 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"testing"
+	"time"
 
-	"google.golang.org/grpc"
+	"github.com/andrebq/stage/internal/protocol"
 )
 
-func acquireClientConnection(t *testing.T, endpoint string) (grpc.ClientConnInterface, func()) {
-	cc, err := grpc.DialContext(context.Background(), endpoint, grpc.WithInsecure())
-	noFailure(t, err, "Unable to establish a connection to %v", endpoint)
-	return cc, func() {
-		err = cc.Close()
-		if err != nil {
-			t.Logf("Unable to close client connection cleanly, cause %v", err)
-		}
-	}
-}
-
-func startServer(t *testing.T, server Server) (net.Listener, func()) {
-	lst, done := acquireListener(t)
-	go func() {
-		err := server.Serve(lst)
-		if err != nil {
-			t.Log("start-server", "listener", lst.Addr().String(), err)
-		}
-	}()
-	return lst, done
-}
-
-func acquireListener(t *testing.T) (net.Listener, func()) {
-	lst, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
+func TestStartExchange(t *testing.T) {
+	e := &Exchange{}
+	c := &Catalog{}
+	catalogListener, closeCatalog := startServer(t, c.Export())
+	defer closeCatalog()
+	if err := e.Catalog(context.Background(), catalogListener.Addr().String()); err != nil {
 		t.Fatal(err)
 	}
-	return lst, func() {
-		lst.Close()
+	exchangeListener, closeExchange := startServer(t, e.Export())
+	defer closeExchange()
+	cc, closeClient := acquireClientConnection(t, exchangeListener.Addr().String())
+	defer closeClient()
+	exchangeClient := protocol.NewExchangeClient(cc)
+	if _, err := exchangeClient.Ping(context.Background(), &protocol.Echo{SentTime: time.Now().UnixNano()}); err != nil {
+		t.Fatal(err)
 	}
-}
-
-func noFailure(t *testing.T, err error, str string, args ...interface{}) {
-	if err == nil {
-		return
-	}
-	t.Fatalf("%v! cause: %v", fmt.Sprintf(str, args...), err)
-}
-
-func TestStartExchange(t *testing.T) {
-	t.Fail()
 }
 
 func TestSimpleExchange(t *testing.T) {
