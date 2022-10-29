@@ -13,11 +13,11 @@ func TestSimpleTransaction(t *testing.T) {
 	ctx := context.Background()
 	s, stop := acquireStage(t)
 	Register(s)
-	err := s.Spawn(ctx, Account{}.Template(), stage.Identity{PID: "accounts.bob"})
+	err := s.Spawn(ctx, "Account", stage.Identity{PID: "accounts.bob"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.Spawn(ctx, Account{}.Template(), stage.Identity{PID: "accounts.alice"})
+	err = s.Spawn(ctx, "Account", stage.Identity{PID: "accounts.alice"})
 	if err != nil {
 		t.Fatal(err)
 	}

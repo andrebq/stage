@@ -133,7 +133,7 @@ func (s *S) manage(initErr chan<- error, ctx context.Context, ac Actor, id Ident
 		initErr <- err
 		return
 	}
-	err = s.init(ctx, ac, id)
+	err = s.init(ctx, ac, id, nil)
 	if err != nil {
 		initErr <- err
 		return
@@ -151,16 +151,11 @@ func (s *S) manage(initErr chan<- error, ctx context.Context, ac Actor, id Ident
 				s.hibernate(ac, id)
 				return
 			}
-			nac, err := s.dispatch(ctx, ac, id, msg, media)
+			err := s.dispatch(ctx, ac, id, msg, media)
 			if err != nil {
 				// do something with this!
 				return
 			}
-			if nac == nil {
-				s.hibernate(ac, id)
-				return
-			}
-			ac = nac
 		}
 	}
 }
@@ -168,21 +163,32 @@ func (s *S) manage(initErr chan<- error, ctx context.Context, ac Actor, id Ident
 func (s *S) hibernate(ac Actor, id Identity) {
 }
 
-func (s *S) dispatch(ctx context.Context, ac Actor, id Identity, msg *nats.Msg, output Media) (Actor, error) {
+func (s *S) dispatch(ctx context.Context, ac Actor, id Identity, msg *nats.Msg, output Media) error {
 	smsg := Message{}
 	smsg.To = id
 	smsg.From = Identity{PID: msg.Header.Get("Sender")}
 	if smsg.From.PID == "" {
-		// TODO: log an invalid message
-		return ac, nil
+		return nil
 	}
 	smsg.Content = msg.Data
 	smsg.Method = msg.Header.Get("Method")
-	return ac.Dispatch(ctx, smsg, output)
+	if ds, ok := ac.(Dispatcher); ok {
+		return ds.Dispatch(ctx, smsg, output)
+	}
+	return ReflectDispatch(ctx, smsg, ac, output)
 }
 
-func (s *S) init(ctx context.Context, ac Actor, id Identity) error {
-	ac.Init(ctx, nil)
+func (s *S) init(ctx context.Context, ac Actor, id Identity, snapshot []byte) error {
+	if init, ok := ac.(Initializer); ok {
+		st := ac.EmptyStatePtr()
+		if len(snapshot) > 0 {
+			err := json.Unmarshal(snapshot, st)
+			if err != nil {
+				return nil
+			}
+		}
+		init.Init(ctx, st)
+	}
 	return nil
 }
 

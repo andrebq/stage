@@ -1,4 +1,4 @@
-.PHONY: setup-local-env teardown-local-env
+.PHONY: setup-local-env teardown-local-env watch test tidy
 
 natsContainer?=nats
 
@@ -13,3 +13,13 @@ setup-local-env:
 
 teardown-local-env:
 	docker kill $(natsContainer) || true
+
+watch:
+	modd -f modd.conf
+
+test:
+	go test ./...
+
+tidy:
+	go mod tidy
+	go fmt ./...

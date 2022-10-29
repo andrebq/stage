@@ -1,12 +1,14 @@
 package ubank
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/andrebq/stage"
+)
+
+const (
+	accountActorName = "Account"
 )
 
 type (
@@ -14,11 +16,15 @@ type (
 		Current int64
 		Time    time.Time
 	}
+
+	AccountState struct {
+		AccountID string
+		Balance   int64
+	}
 	Account struct {
-		state struct {
-			AccountID string
-			Balance   int64
-		}
+		stage.BaseActor
+		stage.Dispatcher
+		state *AccountState
 	}
 
 	Transfer struct {
@@ -30,46 +36,33 @@ type (
 
 // business methods
 
-func (a Account) Debit(_ stage.Message) (Account, error) {
-	a.state.Balance -= 1
-	return a, nil
+func NewAccount() *Account {
+	ac := &Account{}
+	ac.BaseActor = stage.BasicActor(accountActorName, func() interface{} {
+		return &AccountState{}
+	}, func() interface{} {
+		return ac.state
+	})
+	ac.Dispatcher = stage.DispatchByReflection(ac)
+	return ac
 }
 
-func (a Account) Credit(msg stage.Message) (Account, error) {
-	var t Transfer
-	err := json.NewDecoder(bytes.NewBuffer(msg.Content)).Decode(&t)
-	if err != nil {
-		return a, err
-	}
-	a.state.Balance += t.Total
-	return a, nil
-}
-
-func (a Account) GetBalance(ctx context.Context, msg stage.Message, output stage.Media) (Account, error) {
-	output.Send(ctx, msg.From, "Reply", Balance{Current: a.state.Balance, Time: time.Now().Truncate(time.Millisecond)})
-	return a, nil
-}
-
-// methods related to stage dispatch
-
-func (a Account) Dispatch(ctx context.Context, msg stage.Message, output stage.Media) (stage.Actor, error) {
-	switch msg.Method {
-	case "Debit":
-		return a.Debit(msg)
-	case "Credit":
-		return a.Credit(msg)
-	case "GetBalance":
-		return a.GetBalance(ctx, msg, output)
-	}
-	return a, stage.ErrMethodNotFound
-}
-
-func (a Account) Hibernate(ctx context.Context) (interface{}, error) {
-	return a.state, nil
-}
-
-func (a Account) Init(ctx context.Context, state interface{}) error {
+func (a *Account) Init(ctx context.Context, state interface{}) error {
+	a.state = state.(*AccountState)
 	return nil
 }
 
-func (a Account) Template() string { return "Account" }
+func (a *Account) Debit(_ context.Context, _ stage.Identity, t *Transfer, _ stage.Media) error {
+	a.state.Balance -= t.Total
+	return nil
+}
+
+func (a *Account) Credit(_ context.Context, _ stage.Identity, t *Transfer, _ stage.Media) error {
+	a.state.Balance += t.Total
+	return nil
+}
+
+func (a *Account) GetBalance(ctx context.Context, from stage.Identity, _ *struct{}, output stage.Media) error {
+	output.Send(ctx, from, "Reply", Balance{Current: a.state.Balance, Time: time.Now().Truncate(time.Millisecond)})
+	return nil
+}
