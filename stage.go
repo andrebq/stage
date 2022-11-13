@@ -20,11 +20,14 @@ type (
 		nextReplyPID uint64
 
 		actorTemplate map[string]NewActor
+
+		actors sync.Map
 	}
 
-	natsMedia struct {
+	stageMedia struct {
 		nc *nats.Conn
 		id Identity
+		s  *S
 	}
 
 	NewActor func() Actor
@@ -72,9 +75,10 @@ func (s *S) Register(name string, fn NewActor) {
 }
 
 func (s *S) Inject(ctx context.Context, to Identity, method string, data interface{}) error {
-	nm := natsMedia{
+	nm := stageMedia{
 		id: Discard(),
 		nc: s.nc,
+		s:  s,
 	}
 	return nm.Send(ctx, to, method, data)
 }
@@ -82,9 +86,10 @@ func (s *S) Inject(ctx context.Context, to Identity, method string, data interfa
 func (s *S) Request(ctx context.Context, out interface{}, ttl time.Duration, to Identity, method string, data interface{}) error {
 	ctx, cancel := context.WithTimeout(ctx, ttl)
 	defer cancel()
-	nm := natsMedia{
+	nm := stageMedia{
 		id: s.replyPID(),
 		nc: s.nc,
+		s:  s,
 	}
 	sub, err := s.nc.SubscribeSync(fmt.Sprintf("pids.%v", nm.id.PID))
 	if err != nil {
@@ -126,6 +131,13 @@ func (s *S) Spawn(ctx context.Context, template string, id Identity) error {
 }
 
 func (s *S) manage(initErr chan<- error, ctx context.Context, ac Actor, id Identity) {
+	inbox := NewInbox[*nats.Msg]()
+	s.actors.Store(id.PID, inbox)
+	defer func() {
+		inbox.Close()
+		s.actors.Delete(id.PID)
+	}()
+
 	out := make(chan *nats.Msg, 1000)
 	topic := fmt.Sprintf("pids.%v", id.PID)
 	subs, err := s.nc.ChanSubscribe(topic, out)
@@ -138,29 +150,16 @@ func (s *S) manage(initErr chan<- error, ctx context.Context, ac Actor, id Ident
 		initErr <- err
 		return
 	}
-	media := natsMedia{s.nc, id}
+	media := stageMedia{s.nc, id, s}
 	defer subs.Unsubscribe()
 	close(initErr)
 	for {
-		select {
-		case <-ctx.Done():
-			s.hibernate(ac, id)
+		msg, err := inbox.Next(ctx)
+		if err != nil {
 			return
-		case msg, open := <-out:
-			if !open {
-				s.hibernate(ac, id)
-				return
-			}
-			err := s.dispatch(ctx, ac, id, msg, media)
-			if err != nil {
-				// do something with this!
-				return
-			}
 		}
+		s.dispatch(ctx, ac, id, msg, media)
 	}
-}
-
-func (s *S) hibernate(ac Actor, id Identity) {
 }
 
 func (s *S) dispatch(ctx context.Context, ac Actor, id Identity, msg *nats.Msg, output Media) error {
@@ -197,7 +196,7 @@ func (s *S) replyPID() Identity {
 	return Identity{PID: fmt.Sprintf("reply.%v", val)}
 }
 
-func (n natsMedia) Send(ctx context.Context, to Identity, method string, data interface{}) error {
+func (n stageMedia) Send(ctx context.Context, to Identity, method string, data interface{}) error {
 	if to == discard {
 		return nil
 	}
@@ -212,7 +211,7 @@ func (n natsMedia) Send(ctx context.Context, to Identity, method string, data in
 	return n.SendMsg(ctx, msg)
 }
 
-func (n natsMedia) SendMsg(ctx context.Context, msg Message) error {
+func (n stageMedia) SendMsg(ctx context.Context, msg Message) error {
 	msg.From = n.id
 	m := &nats.Msg{}
 	m.Subject = fmt.Sprintf("pids.%v", msg.To.PID)
@@ -220,5 +219,14 @@ func (n natsMedia) SendMsg(ctx context.Context, msg Message) error {
 	m.Data = msg.Content
 	m.Header.Add("Method", msg.Method)
 	m.Header.Add("Sender", n.id.PID)
-	return n.nc.PublishMsg(m)
+	dest, found := n.s.actors.Load(msg.To.PID)
+	if !found {
+		// probably a bug or remote actor,
+		// for now, just drop the message
+		// TODO: setup remote actors here
+		// return n.nc.PublishMsg(m)
+		return nil
+	}
+	dest.(*Inbox[*nats.Msg]).Push(ctx, m)
+	return nil
 }
