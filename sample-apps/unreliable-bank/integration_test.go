@@ -12,23 +12,18 @@ import (
 func TestSimpleTransaction(t *testing.T) {
 	ctx := context.Background()
 	s, stop := acquireStage(t)
-	Register(s)
-	err := s.Spawn(ctx, "Account", stage.Identity{PID: "accounts.bob"})
+	bob, err := s.Spawn(ctx, NewAccount())
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.Spawn(ctx, "Account", stage.Identity{PID: "accounts.alice"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = s.Inject(ctx, stage.Identity{PID: "accounts.bob"}, "Credit", Transfer{Total: 10})
+	err = s.Inject(ctx, bob, "Credit", Transfer{Total: 10})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer stop()
 
 	var balance Balance
-	err = s.Request(ctx, &balance, time.Second, stage.Identity{PID: "accounts.bob"}, "GetBalance", nil)
+	err = s.Request(ctx, &balance, time.Second, bob, "GetBalance", nil)
 	if err != nil {
 		t.Fatal(err)
 	} else if balance.Current != 10 {

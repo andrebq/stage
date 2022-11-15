@@ -18,7 +18,7 @@ watch:
 	modd -f modd.conf
 
 test:
-	go test ./...
+	go test -timeout 1s ./...
 
 tidy:
 	go mod tidy

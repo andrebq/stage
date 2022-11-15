@@ -5,7 +5,9 @@ import "context"
 type (
 	ctxKey byte
 
-	nopMedia struct{}
+	nopMedia struct {
+		na Actor
+	}
 )
 
 const (
@@ -26,4 +28,8 @@ func MediaFromContext(ctx context.Context) Media {
 
 func (n nopMedia) Send(ctx context.Context, to Identity, method string, data interface{}) error {
 	return ErrMediaDisconnected
+}
+
+func (n nopMedia) Become(ac Actor) {
+	n.na = ac
 }

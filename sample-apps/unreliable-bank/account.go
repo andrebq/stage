@@ -7,10 +7,6 @@ import (
 	"github.com/andrebq/stage"
 )
 
-const (
-	accountActorName = "Account"
-)
-
 type (
 	Balance struct {
 		Current int64
@@ -38,17 +34,12 @@ type (
 
 func NewAccount() *Account {
 	ac := &Account{}
-	ac.BaseActor = stage.BasicActor(accountActorName, func() interface{} {
-		return &AccountState{}
-	}, func() interface{} {
-		return ac.state
-	})
 	ac.Dispatcher = stage.DispatchByReflection(ac)
 	return ac
 }
 
-func (a *Account) Init(ctx context.Context, state interface{}) error {
-	a.state = state.(*AccountState)
+func (a *Account) Zero(_ context.Context) error {
+	a.state = &AccountState{}
 	return nil
 }
 

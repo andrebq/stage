@@ -50,7 +50,10 @@ func (i *Inbox[MsgKind]) Next(ctx context.Context) (MsgKind, error) {
 		return zero, ctx.Err()
 	case <-i.closed:
 		return zero, errClosedInbox
-	case data := <-i.output:
+	case data, open := <-i.output:
+		if !open {
+			return zero, errClosedInbox
+		}
 		return data, nil
 	}
 }
@@ -72,16 +75,16 @@ func (i *Inbox[MsgKind]) run(ctx context.Context) error {
 	defer close(i.closed)
 	for {
 		output := i.output
-		val, empty := i.pending.peek()
-		if empty {
+		val, foundData := i.pending.peek()
+		if !foundData {
 			output = nil
 		}
 		select {
 		case output <- val:
+			i.pending.pop()
 		case nval := <-i.input:
 			i.pending.push(nval)
 		case <-i.stop:
-			close(i.closed)
 			return nil
 		case <-ctx.Done():
 			return ctx.Err()

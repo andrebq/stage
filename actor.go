@@ -10,10 +10,7 @@ import (
 type (
 	Media interface {
 		Send(ctx context.Context, to Identity, method string, content interface{}) error
-	}
-	RawMedia interface {
-		Media
-		SendMsg(ctx context.Context, msg Message) error
+		Become(Actor)
 	}
 	Identity struct {
 		PID string
@@ -31,7 +28,6 @@ type (
 	}
 	BaseActor interface {
 		Stateful
-		Template() string
 	}
 	Dispatcher interface {
 		Dispatch(ctx context.Context, message Message, output Media) error
@@ -42,12 +38,10 @@ type (
 	}
 
 	Stateful interface {
-		EmptyStatePtr() interface{}
-		Hibernate(ctx context.Context) (state interface{}, err error)
 	}
 
-	Initializer interface {
-		Init(context.Context, interface{}) error
+	Zeroer interface {
+		Zero(context.Context) error
 	}
 	baseActor struct {
 		template   string
@@ -68,6 +62,10 @@ var (
 	identityType = reflect.TypeOf(Identity{})
 	errType      = reflect.TypeOf((*error)(nil)).Elem()
 )
+
+func (i Identity) IsZero() bool {
+	return i.PID == ""
+}
 
 func BasicActor(template string, emptyState func() interface{}, getState func() interface{}) BaseActor {
 	return &baseActor{
@@ -118,7 +116,6 @@ func findMethod(ac BaseActor, method string) (func(context.Context, Identity, []
 	}
 	mtype := mval.Type()
 	if mtype.NumIn() != 4 {
-		println("here")
 		return nil, ErrInvalidMethod
 	}
 	if mtype.NumOut() != 1 {
