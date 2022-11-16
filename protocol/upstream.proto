@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+option go_package = "github.com/andrebq/stage/protocol";
+
+package proto;
+
+// Upstream exposes methods that allow client instances to
+// send and receive messages from other machines in the mesh
+service Upstream {
+  // RegisterPIDs to the given client
+  rpc RegisterPIDs(PIDSet) returns (Reply) {}
+  // Proxy a given sent of messages through this upstream
+  rpc Proxy(ProxyRequest) returns (ProxyReply) {}
+  // Fetch the next batch of messages from this upstream
+  rpc Fetch(FetchRequest) returns (FetchReply) {}
+}
+
+// PIDSet contains a list of pids
+message PIDSet {
+  repeated string pids = 1;
+}
+
+// ProxyRequest contains a request for a single proxy batch
+message ProxyRequest {
+  repeated StageMessage messages = 1;
+}
+
+// ProxyReply indicates how many of the given messages could
+// be proxied
+message ProxyReply {
+  int32 total = 1;
+}
+
+// Message defines a single stage message
+message StageMessage {
+  string from = 1;
+  string to = 2;
+  string method = 3;
+  bytes content = 4;
+}
+
+message FetchRequest {
+  int32 maxSize = 1;
+}
+
+message FetchReply {
+  repeated StageMessage batch = 1;
+}
+
+// Reply is a placeholder message and does not have any value
+// associated with it
+message Reply {}

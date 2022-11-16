@@ -5,24 +5,41 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/rs/zerolog/log"
-
-	nats "github.com/nats-io/nats.go"
 )
 
 type (
 	S struct {
 		lock sync.Mutex
-		nc   *nats.Conn
+
+		upstream struct {
+			u         Upstream
+			cancel    context.CancelFunc
+			closeOnce sync.Once
+		}
 
 		nextReplyPID uint64
 		nextActorPID uint64
 
 		actors sync.Map
+	}
+
+	Upstream interface {
+		io.Closer
+		// RegisterPIDs with the upstream, such that it knows which pids
+		// can be hosted by this stage
+		RegisterPIDs(context.Context, ...Identity) error
+		// Proxy the list of messages via this upstream
+		Proxy(context.Context, ...Message) error
+		// Fetch the next batch of messages from this upstream
+		// the batch might contain messages to PIDs that are no
+		// different form the ones that were registered
+		Fetch(context.Context) ([]Message, error)
 	}
 
 	stageMedia struct {
@@ -46,11 +63,14 @@ var (
 	ErrInboxNotFound         = errors.New("stage: inbox not found")
 )
 
-func New(natsUpstream string) (*S, error) {
-	if natsUpstream == "" {
-		natsUpstream = nats.DefaultURL
-	}
+func New(upstream Upstream) (*S, error) {
 	s := &S{}
+	if upstream != nil {
+		s.upstream.u = upstream
+		var monitorCtx context.Context
+		monitorCtx, s.upstream.cancel = context.WithCancel(context.Background())
+		go s.monitorUpstream(monitorCtx)
+	}
 	return s, nil
 }
 
@@ -59,8 +79,43 @@ func Discard() Identity {
 }
 
 func (s *S) Close() error {
-	s.nc.Close()
-	return nil
+	var err error
+	s.upstream.closeOnce.Do(func() {
+		if s.upstream.cancel != nil {
+			s.upstream.cancel()
+			err = s.upstream.u.Close()
+		}
+	})
+	return err
+}
+
+func (s *S) monitorUpstream(ctx context.Context) {
+	for {
+		batch, err := s.upstream.u.Fetch(ctx)
+		if errors.Is(err, context.Canceled) {
+			return
+		} else if err != nil {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Millisecond * 500):
+				continue
+			}
+		}
+		if len(batch) > 0 {
+			for _, m := range batch {
+				_ = s.directDispatch(ctx, m)
+			}
+		}
+	}
+}
+
+func (s *S) proxySend(ctx context.Context, msg Message) error {
+	if s.upstream.u == nil {
+		return s.upstream.u.Proxy(ctx, msg)
+	}
+	// no upstream proxy, so it is impossible for this inbox to exist at this moment
+	return ErrInboxNotFound
 }
 
 func (s *S) Inject(ctx context.Context, to Identity, method string, data interface{}) error {
@@ -156,6 +211,15 @@ func (s *S) lookupInbox(id Identity) (*Inbox[Message], bool) {
 	return val.(*Inbox[Message]), true
 }
 
+func (s *S) directDispatch(ctx context.Context, msg Message) error {
+	ib, found := s.lookupInbox(msg.To)
+	if !found {
+		return ErrInboxNotFound
+	}
+	ib.Push(ctx, msg)
+	return nil
+}
+
 func (n *stageMedia) Send(ctx context.Context, to Identity, method string, data interface{}) error {
 	if to == discard {
 		return nil
@@ -169,17 +233,15 @@ func (n *stageMedia) Send(ctx context.Context, to Identity, method string, data 
 	if err != nil {
 		return err
 	}
-	println("Sending: ", string(msg.Content), "to", msg.To.PID, "from", msg.From.PID)
 	return n.sendMsg(ctx, msg)
 }
 
 func (n *stageMedia) sendMsg(ctx context.Context, msg Message) error {
-	dest, found := n.s.lookupInbox(msg.To)
-	if !found {
-		return ErrInboxNotFound
+	err := n.s.directDispatch(ctx, msg)
+	if errors.Is(err, ErrInboxNotFound) {
+		return n.s.proxySend(ctx, msg)
 	}
-	dest.Push(ctx, msg)
-	return nil
+	return err
 }
 
 func (n *stageMedia) Become(ac Actor) {

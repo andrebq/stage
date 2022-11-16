@@ -16,6 +16,8 @@ type (
 	AccountState struct {
 		AccountID string
 		Balance   int64
+
+		Transfers map[Transfer]empty
 	}
 	Account struct {
 		stage.BaseActor
@@ -39,17 +41,25 @@ func NewAccount() *Account {
 }
 
 func (a *Account) Zero(_ context.Context) error {
-	a.state = &AccountState{}
+	a.state = &AccountState{Transfers: make(map[Transfer]empty)}
 	return nil
 }
 
-func (a *Account) Debit(_ context.Context, _ stage.Identity, t *Transfer, _ stage.Media) error {
-	a.state.Balance -= t.Total
+func (a *Account) Debit(ctx context.Context, from stage.Identity, t *Transfer, media stage.Media) error {
+	// dedup transactions
+	if _, ok := a.state.Transfers[*t]; !ok {
+		a.state.Balance -= t.Total
+	}
+	media.Send(ctx, from, "ConfirmDebit", *t)
 	return nil
 }
 
-func (a *Account) Credit(_ context.Context, _ stage.Identity, t *Transfer, _ stage.Media) error {
-	a.state.Balance += t.Total
+func (a *Account) Credit(ctx context.Context, from stage.Identity, t *Transfer, media stage.Media) error {
+	// dedup transactions
+	if _, ok := a.state.Transfers[*t]; !ok {
+		a.state.Balance += t.Total
+	}
+	media.Send(ctx, from, "ConfirmCredit", *t)
 	return nil
 }
 
