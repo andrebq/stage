@@ -53,6 +53,10 @@ func TestDistributedBank(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		// loop until we managed to schedule the transaciton, since the account registration happens
+		// in the background, the Schedule message might arrive before the RegisterAccount
+		// so, if an account does not have a valid PID associated with it
+		// the ledger cannot schedule it
 		if !status.Valid {
 			time.Sleep(time.Millisecond * 10)
 			continue
@@ -66,6 +70,14 @@ func TestDistributedBank(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		// loop until the ledger has scheduled at least one transaction
+		// and until there are no pending transactions.
+		//
+		// Even though both loops are sequential, this arrangement allows them
+		// to run in concurrently.
+		//
+		// And this is what makes stage (and the whole Actor model) so
+		// good.
 		if stats.Total != 0 && stats.Pending == 0 {
 			break
 		}
