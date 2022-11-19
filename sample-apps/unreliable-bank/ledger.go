@@ -21,6 +21,15 @@ type (
 		PID  stage.Identity
 	}
 
+	LedgerStats struct {
+		Total   int
+		Pending int
+	}
+
+	ScheduleStatus struct {
+		Valid bool
+	}
+
 	empty struct{}
 )
 
@@ -43,11 +52,14 @@ func (l *Ledger) RegisterAccount(ctx context.Context, _ stage.Identity, ai *Acco
 }
 
 func (l *Ledger) NumPendingTransaction(ctx context.Context, from stage.Identity, _ *struct{}, media stage.Media) error {
-	media.Send(ctx, from, "Reply", uint64(len(l.pendingCredits)+len(l.pendingDebits)))
+	media.Send(ctx, from, "Reply", LedgerStats{
+		Total:   len(l.transfers),
+		Pending: len(l.pendingCredits) + len(l.pendingDebits),
+	})
 	return nil
 }
 
-func (l *Ledger) Schedule(ctx context.Context, _ stage.Identity, t *Transfer, media stage.Media) error {
+func (l *Ledger) Schedule(ctx context.Context, from stage.Identity, t *Transfer, media stage.Media) error {
 	for _, v := range l.transfers {
 		if v == *t {
 			// dedup a transaction
@@ -56,11 +68,17 @@ func (l *Ledger) Schedule(ctx context.Context, _ stage.Identity, t *Transfer, me
 	}
 	creditor, debitor := l.accounts[t.To], l.accounts[t.From]
 	if creditor.IsZero() || debitor.IsZero() {
+		media.Send(ctx, from, "Reply", ScheduleStatus{
+			Valid: false,
+		})
 		return nil
 	}
 	l.transfers = append(l.transfers, *t)
 	l.pendingDebits[*t] = empty{}
 	media.Send(ctx, debitor, "Debit", t)
+	media.Send(ctx, from, "Reply", ScheduleStatus{
+		Valid: true,
+	})
 	return nil
 }
 

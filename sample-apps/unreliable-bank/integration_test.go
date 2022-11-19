@@ -53,12 +53,12 @@ func TestLedgerTransaction(t *testing.T) {
 
 	s.Inject(ctx, ledger, "Schedule", Transfer{From: "Alice-Check-Account", To: "Bob-Check-Account", Total: 10, Seq: 1})
 	for {
-		var pendingCount int
-		err := s.Request(ctx, &pendingCount, time.Second, ledger, "NumPendingTransaction", struct{}{})
+		var stats LedgerStats
+		err := s.Request(ctx, &stats, time.Second, ledger, "NumPendingTransaction", struct{}{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if pendingCount == 0 {
+		if stats.Total != 0 && stats.Pending == 0 {
 			break
 		}
 		time.Sleep(time.Millisecond * 10)

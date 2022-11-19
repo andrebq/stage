@@ -27,6 +27,8 @@ type (
 		nextActorPID uint64
 
 		actors sync.Map
+
+		discard Identity
 	}
 
 	Upstream interface {
@@ -53,10 +55,6 @@ type (
 )
 
 var (
-	discard = Identity{PID: "discard"}
-)
-
-var (
 	ErrTemplateNotRegistered = errors.New("stage: desired template not available on this stage")
 	ErrEmptyIdentity         = errors.New("stage: missing identity")
 	ErrMethodNotFound        = errors.New("stage: method not found")
@@ -72,11 +70,12 @@ func New(upstream Upstream) (*S, error) {
 		monitorCtx, s.upstream.cancel = context.WithCancel(context.Background())
 		go s.monitorUpstream(monitorCtx)
 	}
+	s.discard = Identity{PID: fmt.Sprintf("%v.discard", s.stageID())}
 	return s, nil
 }
 
-func Discard() Identity {
-	return discard
+func (s *S) Discard() Identity {
+	return s.discard
 }
 
 func (s *S) Close() error {
@@ -93,6 +92,7 @@ func (s *S) Close() error {
 func (s *S) monitorUpstream(ctx context.Context) {
 	for {
 		batch, err := s.upstream.u.Fetch(ctx)
+		log.Trace().Str("stage-id", s.stageID()).Int("batch-size", len(batch)).Send()
 		if errors.Is(err, context.Canceled) {
 			return
 		} else if err != nil {
@@ -111,16 +111,8 @@ func (s *S) monitorUpstream(ctx context.Context) {
 	}
 }
 
-func (s *S) proxySend(ctx context.Context, msg Message) error {
-	if s.upstream.u == nil {
-		return s.upstream.u.Proxy(ctx, msg)
-	}
-	// no upstream proxy, so it is impossible for this inbox to exist at this moment
-	return ErrInboxNotFound
-}
-
 func (s *S) Inject(ctx context.Context, to Identity, method string, data interface{}) error {
-	sm := stageMedia{s: s, id: discard}
+	sm := stageMedia{s: s, id: s.discard}
 	return sm.Send(ctx, to, method, data)
 }
 
@@ -176,17 +168,23 @@ func (s *S) manage(initErr chan<- error, ctx context.Context, ac Actor, pid Iden
 }
 
 func (s *S) replyPID() Identity {
+	prefix := s.stageID()
 	val := atomic.AddUint64(&s.nextReplyPID, 1)
-	return Identity{PID: fmt.Sprintf("reply.%v", val)}
+	return Identity{PID: fmt.Sprintf("%v.r.%v", prefix, val)}
 }
 
 func (s *S) actorPID() Identity {
+	prefix := s.stageID()
 	val := atomic.AddUint64(&s.nextActorPID, 1)
+	return Identity{PID: fmt.Sprintf("%v.a.%v", prefix, val)}
+}
+
+func (s *S) stageID() string {
 	prefix := "s"
 	if s.upstream.u != nil {
 		prefix = s.upstream.u.ID()
 	}
-	return Identity{PID: fmt.Sprintf("%v.actor.%v", prefix, val)}
+	return prefix
 }
 
 func (s *S) openInbox(ctx context.Context, pid Identity) *Inbox[Message] {
@@ -216,17 +214,35 @@ func (s *S) lookupInbox(id Identity) (*Inbox[Message], bool) {
 	return val.(*Inbox[Message]), true
 }
 
+func (s *S) dispatch(ctx context.Context, msg Message) error {
+	_, found := s.lookupInbox(msg.To)
+	if !found {
+		return s.remoteDispatch(ctx, msg)
+	}
+	return s.directDispatch(ctx, msg)
+}
+
 func (s *S) directDispatch(ctx context.Context, msg Message) error {
 	ib, found := s.lookupInbox(msg.To)
 	if !found {
 		return ErrInboxNotFound
 	}
+	log.Trace().Str("stage-id", s.stageID()).Str("from", msg.From.PID).Str("to", msg.To.PID).Str("method", msg.Method).Bool("remote", false).Send()
 	ib.Push(ctx, msg)
 	return nil
 }
 
+func (s *S) remoteDispatch(ctx context.Context, msg Message) error {
+	if s.upstream.u != nil {
+		log.Trace().Str("stage-id", s.stageID()).Str("from", msg.From.PID).Str("to", msg.To.PID).Str("method", msg.Method).Bool("remote", true).Send()
+		return s.upstream.u.Proxy(ctx, msg)
+	}
+	// no upstream proxy, so it is impossible for this inbox to exist at this moment
+	return ErrInboxNotFound
+}
+
 func (n *stageMedia) Send(ctx context.Context, to Identity, method string, data interface{}) error {
-	if to == discard {
+	if to == n.s.discard {
 		return nil
 	}
 	msg := Message{}
@@ -242,11 +258,7 @@ func (n *stageMedia) Send(ctx context.Context, to Identity, method string, data 
 }
 
 func (n *stageMedia) sendMsg(ctx context.Context, msg Message) error {
-	err := n.s.directDispatch(ctx, msg)
-	if errors.Is(err, ErrInboxNotFound) {
-		return n.s.proxySend(ctx, msg)
-	}
-	return err
+	return n.s.dispatch(ctx, msg)
 }
 
 func (n *stageMedia) Become(ac Actor) {
