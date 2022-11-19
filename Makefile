@@ -1,4 +1,4 @@
-.PHONY: setup-local-env teardown-local-env watch test tidy
+.PHONY: setup-local-env teardown-local-env watch test tidy run build
 
 natsContainer?=nats
 
@@ -19,6 +19,12 @@ watch:
 
 test:
 	go test -timeout 1s ./...
+
+build:
+	go build -o dist/stage ./cmd/stage
+
+run: build
+	./dist/stage upstream
 
 tidy:
 	go mod tidy

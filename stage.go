@@ -31,6 +31,7 @@ type (
 
 	Upstream interface {
 		io.Closer
+		ID() string
 		// RegisterPIDs with the upstream, such that it knows which pids
 		// can be hosted by this stage
 		RegisterPIDs(context.Context, ...Identity) error
@@ -181,7 +182,11 @@ func (s *S) replyPID() Identity {
 
 func (s *S) actorPID() Identity {
 	val := atomic.AddUint64(&s.nextActorPID, 1)
-	return Identity{PID: fmt.Sprintf("actor.%v", val)}
+	prefix := "s"
+	if s.upstream.u != nil {
+		prefix = s.upstream.u.ID()
+	}
+	return Identity{PID: fmt.Sprintf("%v.actor.%v", prefix, val)}
 }
 
 func (s *S) openInbox(ctx context.Context, pid Identity) *Inbox[Message] {

@@ -5,12 +5,14 @@ import (
 	"errors"
 	"runtime"
 	"sync"
+
+	"github.com/andrebq/stage/internal/leakybuf"
 )
 
 type (
 	signal             struct{}
 	Inbox[MsgKind any] struct {
-		pending leakybuf[MsgKind]
+		pending leakybuf.B[MsgKind]
 
 		closeOnce sync.Once
 
@@ -18,11 +20,6 @@ type (
 		closed chan signal
 		input  chan MsgKind
 		output chan MsgKind
-	}
-
-	leakybuf[MsgKind any] struct {
-		max   int
-		items []MsgKind
 	}
 )
 
@@ -36,8 +33,8 @@ func NewInbox[MsgKind any]() *Inbox[MsgKind] {
 		closed: make(chan signal),
 		input:  make(chan MsgKind, runtime.NumCPU()),
 		output: make(chan MsgKind),
-		pending: leakybuf[MsgKind]{
-			max: 1000,
+		pending: leakybuf.B[MsgKind]{
+			Max: 1000,
 		},
 	}
 	return i
@@ -75,15 +72,15 @@ func (i *Inbox[MsgKind]) run(ctx context.Context) error {
 	defer close(i.closed)
 	for {
 		output := i.output
-		val, foundData := i.pending.peek()
+		val, foundData := i.pending.Peek()
 		if !foundData {
 			output = nil
 		}
 		select {
 		case output <- val:
-			i.pending.pop()
+			i.pending.Pop()
 		case nval := <-i.input:
-			i.pending.push(nval)
+			i.pending.Push(nval)
 		case <-i.stop:
 			return nil
 		case <-ctx.Done():
@@ -106,33 +103,4 @@ func (i *Inbox[MsgKind]) Close() error {
 
 func (i *Inbox[MsgKind]) doStop() {
 	close(i.stop)
-}
-
-func (lb *leakybuf[MsgKind]) peek() (MsgKind, bool) {
-	if len(lb.items) == 0 {
-		var zero MsgKind
-		return zero, false
-	}
-	return lb.items[0], true
-}
-
-func (lb *leakybuf[MsgKind]) pop() {
-	if len(lb.items) == 0 {
-		return
-	}
-	// TODO: replace this with a proper ring buffer
-	// this will avoid this useless copy operation
-	copy(lb.items, lb.items[1:])
-	var zero MsgKind
-	// allow GC to happen
-	lb.items[len(lb.items)-1] = zero
-	// shrink the buffer
-	lb.items = lb.items[:len(lb.items)-1]
-}
-
-func (lb *leakybuf[MsgKind]) push(val MsgKind) {
-	if len(lb.items) == lb.max {
-		lb.pop()
-	}
-	lb.items = append(lb.items, val)
 }
